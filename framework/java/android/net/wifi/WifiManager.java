@@ -4322,6 +4322,18 @@ public class WifiManager {
             throw e.rethrowFromSystemServer();
         }
     }
+    
+    /**
+     * Check if the chipset supports 6GHz soft ap band.
+     * @return {@code true} if supported, {@code false} otherwise.
+     */
+    public boolean is6GHzApBandSupported() {
+        try {
+            return mService.is6GHzApBandSupported();
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
 
     /**
      * Check if the chipset supports a certain Wi-Fi standard.

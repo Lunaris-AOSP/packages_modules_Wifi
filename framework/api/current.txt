@@ -505,6 +505,7 @@ package android.net.wifi {
     method public boolean is24GHzBandSupported();
     method public boolean is5GHzBandSupported();
     method public boolean is60GHzBandSupported();
+    method public boolean is6GHzApBandSupported();
     method public boolean is6GHzBandSupported();
     method @FlaggedApi("com.android.wifi.flags.android_v_wifi_api") public boolean isAggressiveRoamingModeSupported();
     method @RequiresPermission(android.Manifest.permission.ACCESS_WIFI_STATE) public boolean isAutoWakeupEnabled();

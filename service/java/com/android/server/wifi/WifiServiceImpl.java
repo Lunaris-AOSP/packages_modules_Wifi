@@ -5587,6 +5587,22 @@ public class WifiServiceImpl extends IWifiManager.Stub {
         }
         return mActiveModeWarden.isBandSupportedForSta(WifiScanner.WIFI_BAND_6_GHZ);
     }
+    
+    @Override
+    public boolean is6GHzApBandSupported() {
+        if (mVerboseLoggingEnabled) {
+            mLog.info("is6GHzApBandSupported uid=%").c(Binder.getCallingUid()).flush();
+        }
+
+        return is6GHzApBandSupportedInternal();
+    }
+
+    private boolean is6GHzApBandSupportedInternal() {
+        if (mContext.getResources().getBoolean(R.bool.config_wifiSoftap6ghzSupported)) {
+            return true;
+        }
+        return ApConfigUtil.isSoftApBandSupported(mContext, SoftApConfiguration.BAND_6GHZ);
+    }
 
     @Override
     public boolean is60GHzBandSupported() {

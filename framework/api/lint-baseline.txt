@@ -83,5 +83,9 @@ RequiresPermission: android.net.wifi.rtt.WifiRttManager#startRanging(android.net
     Method 'startRanging' documentation mentions permissions already declared by @RequiresPermission
 
 
+UnflaggedApi: android.net.wifi.WifiManager#is6GHzApBandSupported():
+    New API must be flagged with @FlaggedApi: method android.net.wifi.WifiManager.is6GHzApBandSupported()
+
+
 VisiblySynchronized: android.net.wifi.WifiManager.WifiLock#finalize():
     Internal locks must not be exposed (synchronizing on this or class is still externally observable): method android.net.wifi.WifiManager.WifiLock.finalize()
