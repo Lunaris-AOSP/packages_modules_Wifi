@@ -95,6 +95,7 @@ import com.android.server.wifi.util.ApConfigUtil;
 import com.android.server.wifi.util.LastCallerInfoManager;
 import com.android.server.wifi.util.NativeUtil;
 import com.android.server.wifi.util.WifiPermissionsUtil;
+import com.android.wifi.flags.FeatureFlags;
 import com.android.wifi.resources.R;
 
 import java.io.FileDescriptor;
@@ -148,6 +149,7 @@ public class ActiveModeWarden {
     private final UserManager mUserManager;
     private final LastCallerInfoManager mLastCallerInfoManager;
     private final WifiGlobals mWifiGlobals;
+    private final FeatureFlags mFeatureFlags;
 
     private WifiServiceImpl.SoftApCallbackInternal mSoftApCallback;
     private WifiServiceImpl.SoftApCallbackInternal mLohsCallback;
@@ -447,6 +449,7 @@ public class ActiveModeWarden {
         mUserManager = mWifiInjector.getUserManager();
         mLastCallerInfoManager = mWifiInjector.getLastCallerInfoManager();
         mWifiGlobals = wifiGlobals;
+        mFeatureFlags = mWifiInjector.getDeviceConfigFacade().getFeatureFlags();
 
         wifiNative.registerStatusListener(isReady -> {
             if (!isReady && !mIsShuttingdown) {
@@ -715,15 +718,16 @@ public class ActiveModeWarden {
 
     /** Begin listening to broadcasts and start the internal state machine. */
     public void start() {
-        mContext.registerReceiverForAllUsers(new BroadcastReceiver() {
+        BroadcastReceiver locationChangeReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 // Location mode has been toggled...  trigger with the scan change
                 // update to make sure we are in the correct mode
                 scanAlwaysModeChanged();
             }
-        }, new IntentFilter(LocationManager.MODE_CHANGED_ACTION), null, mHandler);
-        mContext.registerReceiver(new BroadcastReceiver() {
+        };
+
+        BroadcastReceiver airplaneChangedReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 boolean airplaneModeUpdated = mSettingsStore.updateAirplaneModeTracker();
@@ -736,26 +740,51 @@ public class ActiveModeWarden {
                     airplaneModeToggled();
                 }
             }
-        }, new IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED));
-        mContext.registerReceiver(new BroadcastReceiver() {
+        };
+
+        BroadcastReceiver emergencyCallbackModeChangedReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 boolean emergencyMode =
                         intent.getBooleanExtra(TelephonyManager.EXTRA_PHONE_IN_ECM_STATE, false);
                 emergencyCallbackModeChanged(emergencyMode);
             }
-        }, new IntentFilter(TelephonyManager.ACTION_EMERGENCY_CALLBACK_MODE_CHANGED));
+        };
+
+        BroadcastReceiver emergencyCallStateChangedReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                boolean inCall = intent.getBooleanExtra(
+                        TelephonyManager.EXTRA_PHONE_IN_EMERGENCY_CALL, false);
+                emergencyCallStateChanged(inCall);
+            }
+        };
+
+
+        mContext.registerReceiverForAllUsers(locationChangeReceiver,
+                new IntentFilter(LocationManager.MODE_CHANGED_ACTION), null, mHandler);
         boolean trackEmergencyCallState = mResourceCache.getBoolean(
                 R.bool.config_wifi_turn_off_during_emergency_call);
-        if (trackEmergencyCallState) {
-            mContext.registerReceiver(new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    boolean inCall = intent.getBooleanExtra(
-                            TelephonyManager.EXTRA_PHONE_IN_EMERGENCY_CALL, false);
-                    emergencyCallStateChanged(inCall);
-                }
-            }, new IntentFilter(TelephonyManager.ACTION_EMERGENCY_CALL_STATE_CHANGED));
+        if (mFeatureFlags.monitorIntentForAllUsers()) {
+            mContext.registerReceiverForAllUsers(airplaneChangedReceiver,
+                    new IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED), null, mHandler);
+            mContext.registerReceiverForAllUsers(emergencyCallbackModeChangedReceiver,
+                    new IntentFilter(TelephonyManager.ACTION_EMERGENCY_CALLBACK_MODE_CHANGED),
+                    null, mHandler);
+            if (trackEmergencyCallState) {
+                mContext.registerReceiverForAllUsers(emergencyCallStateChangedReceiver,
+                        new IntentFilter(TelephonyManager.ACTION_EMERGENCY_CALL_STATE_CHANGED),
+                        null, mHandler);
+            }
+        } else {
+            mContext.registerReceiver(airplaneChangedReceiver,
+                    new IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED));
+            mContext.registerReceiver(emergencyCallbackModeChangedReceiver,
+                    new IntentFilter(TelephonyManager.ACTION_EMERGENCY_CALLBACK_MODE_CHANGED));
+            if (trackEmergencyCallState) {
+                mContext.registerReceiver(emergencyCallStateChangedReceiver,
+                        new IntentFilter(TelephonyManager.ACTION_EMERGENCY_CALL_STATE_CHANGED));
+            }
         }
         mWifiGlobals.setD2dStaConcurrencySupported(
                 mWifiNative.isP2pStaConcurrencySupported()
@@ -932,6 +961,7 @@ public class ActiveModeWarden {
         @NonNull public final String ssid;
         @Nullable public final String bssid;
         public final boolean didUserApprove;
+        public boolean preferSecondarySta = false;
 
         AdditionalClientModeManagerRequestInfo(
                 @NonNull ExternalClientModeManagerRequestListener listener,
@@ -947,7 +977,6 @@ public class ActiveModeWarden {
             this.ssid = ssid;
             this.bssid = bssid;
             this.didUserApprove = didUserApprove;
-
         }
     }
 
@@ -960,11 +989,12 @@ public class ActiveModeWarden {
      *                 3. The new ClientModeManager - if it was created successfully.
      * @param requestorWs the WorkSource for this request
      * @param didUserApprove if user explicitly approve on this request
+     * @param preferSecondarySta prefer to use secondary CMM for this request if possible
      */
     public void requestLocalOnlyClientModeManager(
             @NonNull ExternalClientModeManagerRequestListener listener,
             @NonNull WorkSource requestorWs, @NonNull String ssid, @NonNull String bssid,
-            boolean didUserApprove) {
+            boolean didUserApprove, boolean preferSecondarySta) {
         if (listener == null) {
             Log.wtf(TAG, "Cannot provide a null ExternalClientModeManagerRequestListener");
             return;
@@ -974,10 +1004,14 @@ public class ActiveModeWarden {
             return;
         }
 
+        AdditionalClientModeManagerRequestInfo additionalClientModeManagerRequestInfo =
+                new AdditionalClientModeManagerRequestInfo(listener, requestorWs,
+                        ROLE_CLIENT_LOCAL_ONLY, ssid, bssid, didUserApprove);
+        additionalClientModeManagerRequestInfo.preferSecondarySta = preferSecondarySta;
+
         mWifiController.sendMessage(
                 WifiController.CMD_REQUEST_ADDITIONAL_CLIENT_MODE_MANAGER,
-                new AdditionalClientModeManagerRequestInfo(listener, requestorWs,
-                        ROLE_CLIENT_LOCAL_ONLY, ssid, bssid, didUserApprove));
+                additionalClientModeManagerRequestInfo);
     }
 
     /**
@@ -2487,7 +2521,8 @@ public class ActiveModeWarden {
                 // Special case for holders with ENTER_CAR_MODE_PRIORITIZED. Only give them the
                 // primary STA to avoid the device getting into STA+STA state.
                 // In STA+STA wifi scans will result in high latency in the secondary STA.
-                if (requestInfo.clientRole == ROLE_CLIENT_LOCAL_ONLY
+                if (!requestInfo.preferSecondarySta
+                        && requestInfo.clientRole == ROLE_CLIENT_LOCAL_ONLY
                         && requestInfo.requestorWs != null) {
                     WorkSource workSource = requestInfo.requestorWs;
                     for (int i = 0; i < workSource.size(); i++) {

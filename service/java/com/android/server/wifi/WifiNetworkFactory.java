@@ -909,7 +909,8 @@ public class WifiNetworkFactory extends NetworkFactory {
             WifiNetworkSpecifier wns = (WifiNetworkSpecifier) ns;
             mActiveSpecificNetworkRequestSpecifier = new WifiNetworkSpecifier(
                     wns.ssidPatternMatcher, wns.bssidPatternMatcher, wns.getBand(),
-                    wns.wifiConfiguration, wns.getPreferredChannelFrequenciesMhz());
+                    wns.wifiConfiguration, wns.getPreferredChannelFrequenciesMhz(),
+                    wns.isPreferSecondarySta());
             mSkipUserDialogue = false;
             mWifiMetrics.incrementNetworkRequestApiNumRequest();
 
@@ -1156,7 +1157,7 @@ public class WifiNetworkFactory extends NetworkFactory {
     }
 
     private void handleConnectToNetworkUserSelectionInternal(WifiConfiguration network,
-            boolean didUserSeeUi) {
+            boolean didUserSeeUi, boolean preferSecondarySta) {
         // Copy over the credentials from the app's request and then copy the ssid from user
         // selection.
         WifiConfiguration networkToConnect =
@@ -1202,8 +1203,10 @@ public class WifiNetworkFactory extends NetworkFactory {
         }
         WorkSource ws = new WorkSource(mActiveSpecificNetworkRequest.getRequestorUid(),
                 mActiveSpecificNetworkRequest.getRequestorPackageName());
+        // mPreferSecondarySta
         mActiveModeWarden.requestLocalOnlyClientModeManager(new ClientModeManagerRequestListener(),
-                ws, networkToConnect.SSID, networkToConnect.BSSID, didUserSeeUi);
+                ws, networkToConnect.SSID, networkToConnect.BSSID, didUserSeeUi,
+                preferSecondarySta);
     }
 
     private boolean hasNetworkForInternet(WifiConfiguration network) {
@@ -1222,9 +1225,11 @@ public class WifiNetworkFactory extends NetworkFactory {
         // Cancel the ongoing scans after user selection.
         cancelPeriodicScans();
         mIsPeriodicScanEnabled = false;
+        boolean preferSecondarySta = mActiveSpecificNetworkRequestSpecifier == null
+                ? false : mActiveSpecificNetworkRequestSpecifier.isPreferSecondarySta();
 
         // Trigger connection attempts.
-        handleConnectToNetworkUserSelectionInternal(network, didUserSeeUi);
+        handleConnectToNetworkUserSelectionInternal(network, didUserSeeUi, preferSecondarySta);
 
         // Add the network to the approved access point map for the app.
         addNetworkToUserApprovedAccessPointMap(mUserSelectedNetwork);
@@ -1996,7 +2001,8 @@ public class WifiNetworkFactory extends NetworkFactory {
             WifiConfiguration config = mActiveSpecificNetworkRequestSpecifier.wifiConfiguration;
             config.SSID = "\"" + ssid + "\"";
             config.BSSID = bssid.toString();
-            handleConnectToNetworkUserSelectionInternal(config, false);
+            handleConnectToNetworkUserSelectionInternal(config, false,
+                    mActiveSpecificNetworkRequestSpecifier.isPreferSecondarySta());
             mWifiMetrics.incrementNetworkRequestApiNumUserApprovalBypass();
             return true;
         }

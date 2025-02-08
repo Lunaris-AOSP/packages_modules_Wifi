@@ -273,3 +273,12 @@ flag {
     bug: "382023801"
     is_fixed_read_only: true
 }
+
+flag {
+    name: "monitor_intent_for_all_users"
+    is_exported: false
+    namespace: "wifi"
+    description: "IntentReceiver should monitor intent from all users"
+    bug: "390257834"
+    is_fixed_read_only: true
+}
