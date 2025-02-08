@@ -516,7 +516,7 @@ public class WifiCountryCode {
     }
 
     private boolean shouldDisconnectWifiToForceUpdate() {
-        if (!hasCalling() || mWifiCarrierInfoManager.isWifiCallingAvailable()) {
+        if (hasCalling() && mWifiCarrierInfoManager.isWifiCallingAvailable()) {
             return false;
         }
 
