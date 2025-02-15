@@ -4959,8 +4959,8 @@ public class WifiMetrics {
                     eventLine.append(",client_control_is_enabled=" + event.clientControlIsEnabled);
                     pw.println(eventLine.toString());
                 }
-
-                mWifiPowerMetrics.dump(pw);
+                // TODO(b/393985164): Temporary remove this from dump.
+                // mWifiPowerMetrics.dump(pw);
                 mWifiWakeMetrics.dump(pw);
 
                 pw.println("mWifiLogProto.isMacRandomizationOn="
