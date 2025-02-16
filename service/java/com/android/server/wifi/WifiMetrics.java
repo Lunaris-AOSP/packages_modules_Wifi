@@ -1244,6 +1244,8 @@ public class WifiMetrics {
         private int mPhase2Method;
         private int mPasspointRoamingType;
         private int mTofuConnectionState;
+        private long mL2ConnectingDuration;
+        private long mL3ConnectingDuration;
 
         @VisibleForTesting
         ConnectionEvent() {
@@ -2043,6 +2045,8 @@ public class WifiMetrics {
                     mFirstConnectionAfterBoot;
             currentConnectionEvent.mRole = role;
             currentConnectionEvent.mUid = uid;
+            currentConnectionEvent.mL2ConnectingDuration = 0;
+            currentConnectionEvent.mL3ConnectingDuration = 0;
             mFirstConnectionAfterBoot = false;
             mConnectionEventList.add(currentConnectionEvent);
             mScanResultRssiTimestampMillis = -1;
@@ -2261,6 +2265,26 @@ public class WifiMetrics {
     }
 
     /**
+     * Log L2 and L3 connection transition time
+     *
+     * @param ifaceName interface name for this connection event
+     * @param l2ConnectingDuration Time duration between L2ConnectState to L3ProvisioningState
+     * @param l3ConnectingDuration Time duration between L3ProvisioningState to mL3ConnectedState
+     */
+    public void reportConnectingDuration(
+            String ifaceName,
+            long l2ConnectingDuration,
+            long l3ConnectingDuration) {
+        synchronized (mLock) {
+            ConnectionEvent currentConnectionEvent = mCurrentConnectionEventPerIface.get(ifaceName);
+            if (currentConnectionEvent != null) {
+                currentConnectionEvent.mL2ConnectingDuration = l2ConnectingDuration;
+                currentConnectionEvent.mL3ConnectingDuration = l3ConnectingDuration;
+            }
+        }
+    }
+
+    /**
      * End a Connection event record. Call when wifi connection attempt succeeds or fails.
      * If a Connection event has not been started and is active when .end is called, then this
      * method will do nothing.
@@ -2332,7 +2356,9 @@ public class WifiMetrics {
                         currentConnectionEvent.mCarrierId,
                         currentConnectionEvent.mTofuConnectionState,
                         currentConnectionEvent.mUid,
-                        frequency);
+                        frequency,
+                        currentConnectionEvent.mL2ConnectingDuration,
+                        currentConnectionEvent.mL3ConnectingDuration);
 
                 if (connectionSucceeded) {
                     reportRouterCapabilities(currentConnectionEvent.mRouterFingerPrint);

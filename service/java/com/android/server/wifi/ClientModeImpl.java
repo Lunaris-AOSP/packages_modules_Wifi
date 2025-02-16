@@ -327,6 +327,12 @@ public class ClientModeImpl extends StateMachine implements ClientMode {
 
     private PowerManager.WakeLock mSuspendWakeLock;
 
+    // Log Wifi L2 and L3 connection state transition time stamp
+    private long mL2ConnectingStateTimestamp;
+    private long mL2ConnectedStateTimestamp;
+    private long mL3ProvisioningStateTimestamp;
+    private long mL3ConnectedStateTimestamp;
+
     /**
      * Value to set in wpa_supplicant "bssid" field when we don't want to restrict connection to
      * a specific AP.
@@ -3896,6 +3902,15 @@ public class ClientModeImpl extends StateMachine implements ClientMode {
         if (frequency == WifiInfo.UNKNOWN_FREQUENCY && candidate != null) {
             frequency = candidate.frequency;
         }
+
+        long l2ConnectionDuration =
+                (mL2ConnectedStateTimestamp - mL2ConnectingStateTimestamp) > 0
+                ? (mL2ConnectedStateTimestamp - mL2ConnectingStateTimestamp) : 0;
+        long l3ConnectionDuration = (mL3ConnectedStateTimestamp - mL3ProvisioningStateTimestamp) > 0
+                ? (mL3ConnectedStateTimestamp - mL3ProvisioningStateTimestamp) : 0;
+        mWifiMetrics.reportConnectingDuration(mInterfaceName,
+                l2ConnectionDuration, l3ConnectionDuration);
+
         mWifiMetrics.endConnectionEvent(mInterfaceName, level2FailureCode,
                 connectivityFailureCode, level2FailureReason, frequency, statusCode);
         mWifiConnectivityManager.handleConnectionAttemptEnded(
@@ -6084,6 +6099,7 @@ public class ClientModeImpl extends StateMachine implements ClientMode {
             // network. In some cases supplicant ignores the connect requests (it might not
             // find the target SSID in its cache), Therefore we end up stuck that state, hence the
             // need for the watchdog.
+            mL2ConnectingStateTimestamp = mClock.getElapsedSinceBootMillis();
             mConnectingWatchdogCount++;
             logd("Start Connecting Watchdog " + mConnectingWatchdogCount);
             sendMessageDelayed(obtainMessage(CMD_CONNECTING_WATCHDOG_TIMER,
@@ -6459,6 +6475,7 @@ public class ClientModeImpl extends StateMachine implements ClientMode {
 
         @Override
         public void enterImpl() {
+            mL2ConnectedStateTimestamp = mClock.getElapsedSinceBootMillis();
             final WifiConfiguration config = getConnectedWifiConfigurationInternal();
             if (config == null) {
                 logw("Connected to a network that's already been removed " + mLastNetworkId
@@ -7078,6 +7095,7 @@ public class ClientModeImpl extends StateMachine implements ClientMode {
 
         @Override
         public void enterImpl() {
+            mL3ProvisioningStateTimestamp = mClock.getElapsedSinceBootMillis();
             startL3Provisioning();
             if (mContext.getResources().getBoolean(
                     R.bool.config_wifiRemainConnectedAfterIpProvisionTimeout)) {
@@ -7347,7 +7365,7 @@ public class ClientModeImpl extends StateMachine implements ClientMode {
             if (mVerboseLoggingEnabled) {
                 log("Enter ConnectedState mScreenOn=" + mScreenOn);
             }
-
+            mL3ConnectedStateTimestamp = mClock.getElapsedSinceBootMillis();
             reportConnectionAttemptEnd(
                     WifiMetrics.ConnectionEvent.FAILURE_NONE,
                     WifiMetricsProto.ConnectionEvent.HLF_NONE,
