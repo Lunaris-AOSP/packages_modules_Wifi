@@ -1577,6 +1577,7 @@ public class ClientModeImplTest extends WifiBaseTest {
         mCmi.sendMessage(WifiMonitor.NETWORK_CONNECTION_EVENT,
                 new NetworkConnectionEventInfo(0, wifiSsid, TEST_BSSID_STR, false, null));
         mLooper.dispatchAll();
+        verify(mEapFailureNotifier).dismissEapFailureNotification(mConnectedNetwork.SSID);
         assertEquals("L3ProvisioningState", getCurrentState().getName());
     }
 

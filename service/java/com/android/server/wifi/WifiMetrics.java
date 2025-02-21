@@ -56,6 +56,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.ConnectivityManager;
+import android.net.MacAddress;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.wifi.DeauthenticationReasonCode;
@@ -7451,9 +7452,17 @@ public class WifiMetrics {
                             WifiLinkLayerStats.ScanResultWithSameFreq linkLayerScanResult =
                                     link.scan_results_same_freq.get(scanResultsIndex);
                             if (linkLayerScanResult != null) {
-                                String wifiLinkBssid = (mloLinks.size() > 0)
-                                        ? mloLinks.get(link.link_id, new MloLink())
-                                        .getApMacAddress().toString() : info.getBSSID();
+                                String wifiLinkBssid = "";
+                                if (mloLinks.size() > 0) {
+                                    MacAddress apMacAddress =
+                                            mloLinks.get(link.link_id, new MloLink())
+                                            .getApMacAddress();
+                                    if (apMacAddress != null) {
+                                        wifiLinkBssid = apMacAddress.toString();
+                                    }
+                                } else {
+                                    wifiLinkBssid = info.getBSSID();
+                                }
                                 if (!linkLayerScanResult.bssid.equals(wifiLinkBssid)) {
                                     ScanResultWithSameFreq scanResultWithSameFreq =
                                             new ScanResultWithSameFreq();

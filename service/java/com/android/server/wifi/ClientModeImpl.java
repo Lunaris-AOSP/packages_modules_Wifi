@@ -5798,6 +5798,8 @@ public class ClientModeImpl extends StateMachine implements ClientMode {
                     // We need to get the updated pseudonym from supplicant for EAP-SIM/AKA/AKA'
                     if (config.enterpriseConfig != null
                             && config.enterpriseConfig.isAuthenticationSimBased()) {
+                        // clear SIM related EapFailurenotification
+                        mEapFailureNotifier.dismissEapFailureNotification(config.SSID);
                         if (mWifiCarrierInfoManager.isOobPseudonymFeatureEnabled(
                                 config.carrierId)) {
                             if (mVerboseLoggingEnabled) {

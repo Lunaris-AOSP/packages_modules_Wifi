@@ -5939,6 +5939,7 @@ public class WifiP2pServiceImpl extends IWifiP2pManager.Stub {
                                         mSavedPeerConfig.wps.pin);
                             }
                         }
+                        smTransition(this, mGroupCreatedState);
                         break;
                     case PEER_CONNECTION_USER_REJECT:
                         if (mVerboseLoggingEnabled) logd("User rejected incoming request");
