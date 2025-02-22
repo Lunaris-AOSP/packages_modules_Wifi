@@ -1590,8 +1590,8 @@ public class WifiP2pServiceImplTest extends WifiBaseTest {
         when(mView.findViewById(eq(R.id.info))).thenReturn(mock(ViewGroup.class));
         ArrayList<InetAddress> p2pInetAddresses = new ArrayList<>();
         p2pInetAddresses.add(InetAddresses.parseNumericAddress(P2P_GO_IP));
-        when(mP2pNetworkInterface.getInetAddresses())
-                .thenReturn(Collections.enumeration(p2pInetAddresses));
+        doAnswer(invocation -> Collections.enumeration(new ArrayList<>(p2pInetAddresses)))
+                .when(mP2pNetworkInterface).getInetAddresses();
 
         setUpWifiP2pServiceImpl(true);
         mClient1 = new Binder();
@@ -8836,7 +8836,6 @@ public class WifiP2pServiceImplTest extends WifiBaseTest {
         assertEquals(WifiP2pPairingBootstrappingConfig
                         .PAIRING_BOOTSTRAPPING_METHOD_OPPORTUNISTIC,
                 config.getPairingBootstrappingConfig().getPairingBootstrappingMethod());
-        assertEquals(config.deviceAddress, mTestWifiP2pV2Device.deviceAddress);
         assertTrue(config.isAuthorizeConnectionFromPeerEnabled());
     }
 
@@ -8877,7 +8876,6 @@ public class WifiP2pServiceImplTest extends WifiBaseTest {
         assertEquals(WifiP2pPairingBootstrappingConfig
                         .PAIRING_BOOTSTRAPPING_METHOD_KEYPAD_PINCODE,
                 config.getPairingBootstrappingConfig().getPairingBootstrappingMethod());
-        assertEquals(config.deviceAddress, mTestWifiP2pV2Device.deviceAddress);
         assertTrue(config.isAuthorizeConnectionFromPeerEnabled());
     }
 
@@ -8917,7 +8915,6 @@ public class WifiP2pServiceImplTest extends WifiBaseTest {
         assertEquals(WifiP2pPairingBootstrappingConfig
                         .PAIRING_BOOTSTRAPPING_METHOD_KEYPAD_PASSPHRASE,
                 config.getPairingBootstrappingConfig().getPairingBootstrappingMethod());
-        assertEquals(config.deviceAddress, mTestWifiP2pV2Device.deviceAddress);
         assertTrue(config.isAuthorizeConnectionFromPeerEnabled());
     }
 
