@@ -168,4 +168,122 @@ public class WifiP2pMonitorTest extends WifiBaseTest {
         assertEquals(event.device.deviceAddress,
                 ((WifiP2pProvDiscEvent) messageCaptor.getValue().obj).device.deviceAddress);
     }
+
+    /**
+     * Broadcast message when provision discovery request event with requested
+     * method: opportunistic
+     */
+    @Test
+    public void testBroadcastP2pProvisionDiscoveryPairingBootstrappingOpportunisticRequest()
+            throws Exception {
+        mWifiP2pMonitor.registerHandler(
+                P2P_IFACE_NAME, WifiP2pMonitor
+                        .P2P_PROV_DISC_PAIRING_BOOTSTRAPPING_OPPORTUNISTIC_REQ_EVENT,
+                mHandlerSpy);
+        WifiP2pProvDiscEvent event = new WifiP2pProvDiscEvent();
+        event.device = new WifiP2pDevice();
+        event.device.deviceAddress = "11:22:33:44:55:66";
+        event.event = WifiP2pProvDiscEvent.PAIRING_BOOTSTRAPPING_OPPORTUNISTIC_REQ;
+        mWifiP2pMonitor.broadcastP2pProvisionDiscoveryPairingBootstrappingOpportunisticRequest(
+                P2P_IFACE_NAME, event);
+        mLooper.dispatchAll();
+
+        ArgumentCaptor<Message> messageCaptor = ArgumentCaptor.forClass(Message.class);
+        verify(mHandlerSpy).handleMessage(messageCaptor.capture());
+        assertEquals(WifiP2pMonitor.P2P_PROV_DISC_PAIRING_BOOTSTRAPPING_OPPORTUNISTIC_REQ_EVENT,
+                messageCaptor.getValue().what);
+        assertEquals(event.device.deviceAddress,
+                ((WifiP2pProvDiscEvent) messageCaptor.getValue().obj).device.deviceAddress);
+        assertEquals(WifiP2pProvDiscEvent.PAIRING_BOOTSTRAPPING_OPPORTUNISTIC_REQ,
+                ((WifiP2pProvDiscEvent) messageCaptor.getValue().obj).event);
+    }
+
+    /**
+     * Broadcast message when provision discovery response event with requested
+     * method: opportunistic
+     */
+    @Test
+    public void testBroadcastP2pProvisionDiscoveryPairingBootstrappingOpportunisticResponse()
+            throws Exception {
+        mWifiP2pMonitor.registerHandler(
+                P2P_IFACE_NAME, WifiP2pMonitor
+                        .P2P_PROV_DISC_PAIRING_BOOTSTRAPPING_OPPORTUNISTIC_RSP_EVENT,
+                mHandlerSpy);
+        WifiP2pProvDiscEvent event = new WifiP2pProvDiscEvent();
+        event.device = new WifiP2pDevice();
+        event.device.deviceAddress = "11:22:33:44:55:66";
+        event.event = WifiP2pProvDiscEvent.PAIRING_BOOTSTRAPPING_OPPORTUNISTIC_RSP;
+        mWifiP2pMonitor.broadcastP2pProvisionDiscoveryPairingBootstrappingOpportunisticResponse(
+                P2P_IFACE_NAME, event);
+        mLooper.dispatchAll();
+
+        ArgumentCaptor<Message> messageCaptor = ArgumentCaptor.forClass(Message.class);
+        verify(mHandlerSpy).handleMessage(messageCaptor.capture());
+        assertEquals(WifiP2pMonitor.P2P_PROV_DISC_PAIRING_BOOTSTRAPPING_OPPORTUNISTIC_RSP_EVENT,
+                messageCaptor.getValue().what);
+        assertEquals(event.device.deviceAddress,
+                ((WifiP2pProvDiscEvent) messageCaptor.getValue().obj).device.deviceAddress);
+        assertEquals(WifiP2pProvDiscEvent.PAIRING_BOOTSTRAPPING_OPPORTUNISTIC_RSP,
+                ((WifiP2pProvDiscEvent) messageCaptor.getValue().obj).event);
+    }
+
+    /**
+     * Broadcast message when provision discovery response event with requested
+     * method: Keypad pin-code or passphrase
+     */
+    @Test
+    public void testBroadcastP2pProvisionDiscoveryEnterPairingBootstrappingPinOrPassphrase()
+            throws Exception {
+        mWifiP2pMonitor.registerHandler(
+                P2P_IFACE_NAME, WifiP2pMonitor
+                        .P2P_PROV_DISC_ENTER_PAIRING_BOOTSTRAPPING_PIN_OR_PASSPHRASE_EVENT,
+                mHandlerSpy);
+        WifiP2pProvDiscEvent event = new WifiP2pProvDiscEvent();
+        event.device = new WifiP2pDevice();
+        event.device.deviceAddress = "11:22:33:44:55:66";
+        event.event = WifiP2pProvDiscEvent.PAIRING_BOOTSTRAPPING_ENTER_PIN;
+        mWifiP2pMonitor.broadcastP2pProvisionDiscoveryEnterPairingBootstrappingPinOrPassphrase(
+                P2P_IFACE_NAME, event);
+        mLooper.dispatchAll();
+
+        ArgumentCaptor<Message> messageCaptor = ArgumentCaptor.forClass(Message.class);
+        verify(mHandlerSpy).handleMessage(messageCaptor.capture());
+        assertEquals(WifiP2pMonitor
+                        .P2P_PROV_DISC_ENTER_PAIRING_BOOTSTRAPPING_PIN_OR_PASSPHRASE_EVENT,
+                messageCaptor.getValue().what);
+        assertEquals(event.device.deviceAddress,
+                ((WifiP2pProvDiscEvent) messageCaptor.getValue().obj).device.deviceAddress);
+        assertEquals(WifiP2pProvDiscEvent.PAIRING_BOOTSTRAPPING_ENTER_PIN,
+                ((WifiP2pProvDiscEvent) messageCaptor.getValue().obj).event);
+    }
+
+    /**
+     * Broadcast message when provision discovery response event with requested
+     * method: Display pin-code or passphrase
+     */
+    @Test
+    public void testBroadcastP2pProvisionDiscoveryShowPairingBootstrappingPinOrPassphrase()
+            throws Exception {
+        mWifiP2pMonitor.registerHandler(
+                P2P_IFACE_NAME, WifiP2pMonitor
+                        .P2P_PROV_DISC_SHOW_PAIRING_BOOTSTRAPPING_PIN_OR_PASSPHRASE_EVENT,
+                mHandlerSpy);
+        WifiP2pProvDiscEvent event = new WifiP2pProvDiscEvent();
+        event.device = new WifiP2pDevice();
+        event.device.deviceAddress = "11:22:33:44:55:66";
+        event.event = WifiP2pProvDiscEvent.PAIRING_BOOTSTRAPPING_SHOW_PASSPHRASE;
+        mWifiP2pMonitor.broadcastP2pProvisionDiscoveryShowPairingBootstrappingPinOrPassphrase(
+                P2P_IFACE_NAME, event);
+        mLooper.dispatchAll();
+
+        ArgumentCaptor<Message> messageCaptor = ArgumentCaptor.forClass(Message.class);
+        verify(mHandlerSpy).handleMessage(messageCaptor.capture());
+        assertEquals(WifiP2pMonitor
+                        .P2P_PROV_DISC_SHOW_PAIRING_BOOTSTRAPPING_PIN_OR_PASSPHRASE_EVENT,
+                messageCaptor.getValue().what);
+        assertEquals(event.device.deviceAddress,
+                ((WifiP2pProvDiscEvent) messageCaptor.getValue().obj).device.deviceAddress);
+        assertEquals(WifiP2pProvDiscEvent.PAIRING_BOOTSTRAPPING_SHOW_PASSPHRASE,
+                ((WifiP2pProvDiscEvent) messageCaptor.getValue().obj).event);
+    }
 }

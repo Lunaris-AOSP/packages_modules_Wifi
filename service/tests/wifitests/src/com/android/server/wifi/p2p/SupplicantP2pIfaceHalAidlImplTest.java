@@ -24,6 +24,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.AdditionalMatchers.aryEq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyByte;
@@ -3138,61 +3139,53 @@ public class SupplicantP2pIfaceHalAidlImplTest extends WifiBaseTest {
      * provision discovery request packet.
      */
     @Test
-    public void testProvisionDiscoveryBootstrappingMethodMapping() throws Exception {
+    public void testProvisionDiscovery() throws Exception {
         assumeTrue(Environment.isSdkAtLeastB());
-        setCachedServiceVersion(4);
-        doNothing().when(mISupplicantP2pIfaceMock).provisionDiscoveryWithParams(any());
-        ArgumentCaptor<android.hardware.wifi.supplicant.P2pProvisionDiscoveryParams>
-                p2pProvDiscParamsCaptor = ArgumentCaptor.forClass(
-                android.hardware.wifi.supplicant.P2pProvisionDiscoveryParams.class);
-
         executeAndValidateInitializationSequence(false, false);
+        testProvisionDiscoveryBootstrappingMethodMapping(WifiP2pPairingBootstrappingConfig
+                        .PAIRING_BOOTSTRAPPING_METHOD_DISPLAY_PINCODE, "1234",
+                P2pPairingBootstrappingMethodMask.BOOTSTRAPPING_KEYPAD_PINCODE, 4);
+        testProvisionDiscoveryBootstrappingMethodMapping(WifiP2pPairingBootstrappingConfig
+                        .PAIRING_BOOTSTRAPPING_METHOD_DISPLAY_PASSPHRASE,
+                "abed", P2pPairingBootstrappingMethodMask.BOOTSTRAPPING_KEYPAD_PASSPHRASE, 4);
+        testProvisionDiscoveryBootstrappingMethodMapping(WifiP2pPairingBootstrappingConfig
+                        .PAIRING_BOOTSTRAPPING_METHOD_KEYPAD_PINCODE,
+                "", P2pPairingBootstrappingMethodMask.BOOTSTRAPPING_DISPLAY_PINCODE, 4);
+        testProvisionDiscoveryBootstrappingMethodMapping(WifiP2pPairingBootstrappingConfig
+                        .PAIRING_BOOTSTRAPPING_METHOD_KEYPAD_PASSPHRASE,
+                "", P2pPairingBootstrappingMethodMask.BOOTSTRAPPING_DISPLAY_PASSPHRASE, 4);
+        testProvisionDiscoveryBootstrappingMethodMapping(WpsInfo.DISPLAY, "",
+                WpsProvisionMethod.KEYPAD, 3);
+        testProvisionDiscoveryBootstrappingMethodMapping(WpsInfo.KEYPAD, "12345670",
+                WpsProvisionMethod.DISPLAY, 3);
+        testProvisionDiscoveryBootstrappingMethodMapping(WpsInfo.PBC, "",
+                WpsProvisionMethod.PBC, 3);
+    }
 
-        // DISPLAY PIN -> ENTER PIN
-        WifiP2pConfig config = createP2pConfigWithBootstrappingMethod(mPeerMacAddressBytes,
-                WifiP2pPairingBootstrappingConfig.PAIRING_BOOTSTRAPPING_METHOD_DISPLAY_PINCODE,
-                "1234", false);
+    private void testProvisionDiscoveryBootstrappingMethodMapping(int frameworkMethod,
+            String passwordOrPin, int expectedAidlMethod, int serviceVersion) throws Exception {
+        setCachedServiceVersion(serviceVersion);
+        if (serviceVersion >= 4) { // Version 4 and above use provisionDiscoveryWithParams
+            doNothing().when(mISupplicantP2pIfaceMock).provisionDiscoveryWithParams(argThat(
+                    params -> params.pairingBootstrappingMethod == expectedAidlMethod
+                            && params.provisionMethod == WpsProvisionMethod.NONE));
+        } else { // Version 3 and below use the older provisionDiscovery
+            doNothing().when(mISupplicantP2pIfaceMock).provisionDiscovery(
+                    aryEq(mPeerMacAddressBytes), eq(expectedAidlMethod));
+        }
+
+        WifiP2pConfig config;
+        if (serviceVersion >= 4) {
+            config = createP2pConfigWithBootstrappingMethod(mPeerMacAddressBytes,
+                    frameworkMethod, passwordOrPin, false);
+        } else {
+            config = createPlaceholderP2pConfig(mPeerMacAddress, frameworkMethod,
+                    passwordOrPin);
+        }
+
         assertTrue(mDut.provisionDiscovery(config));
-        verify(mISupplicantP2pIfaceMock, times(1))
-                .provisionDiscoveryWithParams(p2pProvDiscParamsCaptor.capture());
-        android.hardware.wifi.supplicant.P2pProvisionDiscoveryParams aidlProvDiscParams =
-                p2pProvDiscParamsCaptor.getValue();
-        assertEquals(P2pPairingBootstrappingMethodMask.BOOTSTRAPPING_KEYPAD_PINCODE,
-                aidlProvDiscParams.pairingBootstrappingMethod);
 
-        // DISPLAY PASSPHRASE -> ENTER PASSPHRASE
-        config = createP2pConfigWithBootstrappingMethod(mPeerMacAddressBytes,
-                WifiP2pPairingBootstrappingConfig.PAIRING_BOOTSTRAPPING_METHOD_DISPLAY_PASSPHRASE,
-                "abed", false);
-        assertTrue(mDut.provisionDiscovery(config));
-        verify(mISupplicantP2pIfaceMock, times(2))
-                .provisionDiscoveryWithParams(p2pProvDiscParamsCaptor.capture());
-        aidlProvDiscParams = p2pProvDiscParamsCaptor.getValue();
-        assertEquals(P2pPairingBootstrappingMethodMask.BOOTSTRAPPING_KEYPAD_PASSPHRASE,
-                aidlProvDiscParams.pairingBootstrappingMethod);
-
-        // ENTER PIN -> DISPLAY PIN
-        config = createP2pConfigWithBootstrappingMethod(mPeerMacAddressBytes,
-                WifiP2pPairingBootstrappingConfig.PAIRING_BOOTSTRAPPING_METHOD_KEYPAD_PINCODE,
-                "", false);
-        assertTrue(mDut.provisionDiscovery(config));
-        verify(mISupplicantP2pIfaceMock, times(3))
-                .provisionDiscoveryWithParams(p2pProvDiscParamsCaptor.capture());
-        aidlProvDiscParams = p2pProvDiscParamsCaptor.getValue();
-        assertEquals(P2pPairingBootstrappingMethodMask.BOOTSTRAPPING_DISPLAY_PINCODE,
-                aidlProvDiscParams.pairingBootstrappingMethod);
-
-        // ENTER PASSPHRASE -> DISPLAY PASSPHRASE
-        config = createP2pConfigWithBootstrappingMethod(mPeerMacAddressBytes,
-                WifiP2pPairingBootstrappingConfig.PAIRING_BOOTSTRAPPING_METHOD_KEYPAD_PASSPHRASE,
-                "", false);
-        assertTrue(mDut.provisionDiscovery(config));
-        verify(mISupplicantP2pIfaceMock, times(4))
-                .provisionDiscoveryWithParams(p2pProvDiscParamsCaptor.capture());
-        aidlProvDiscParams = p2pProvDiscParamsCaptor.getValue();
-        assertEquals(P2pPairingBootstrappingMethodMask.BOOTSTRAPPING_DISPLAY_PASSPHRASE,
-                aidlProvDiscParams.pairingBootstrappingMethod);
-
+        // Verification is handled by the ArgumentMatcher in doNothing().when().
     }
 
     /**

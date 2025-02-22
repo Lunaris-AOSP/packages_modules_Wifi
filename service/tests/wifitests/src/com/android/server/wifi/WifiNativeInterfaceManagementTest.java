@@ -61,6 +61,7 @@ import com.android.server.wifi.HalDeviceManager.InterfaceDestroyedListener;
 import com.android.server.wifi.WifiNative.SupplicantDeathEventHandler;
 import com.android.server.wifi.WifiNative.VendorHalDeathEventHandler;
 import com.android.server.wifi.hal.WifiNanIface;
+import com.android.server.wifi.mainline_supplicant.MainlineSupplicant;
 import com.android.server.wifi.p2p.WifiP2pNative;
 import com.android.server.wifi.util.NetdWrapper;
 import com.android.server.wifi.util.NetdWrapper.NetdEventObserver;
@@ -109,6 +110,7 @@ public class WifiNativeInterfaceManagementTest extends WifiBaseTest {
     @Mock private WifiVendorHal mWifiVendorHal;
     @Mock private WifiNl80211Manager mWificondControl;
     @Mock private SupplicantStaIfaceHal mSupplicantStaIfaceHal;
+    @Mock private MainlineSupplicant mMainlineSupplicant;
     @Mock private HostapdHal mHostapdHal;
     @Mock private WifiMonitor mWifiMonitor;
     @Mock private NetdWrapper mNetdWrapper;
@@ -263,7 +265,8 @@ public class WifiNativeInterfaceManagementTest extends WifiBaseTest {
         mWifiNative = new WifiNative(
                 mWifiVendorHal, mSupplicantStaIfaceHal, mHostapdHal, mWificondControl,
                 mWifiMonitor, mPropertyService, mWifiMetrics,
-                new Handler(mLooper.getLooper()), null, mBuildProperties, mWifiInjector);
+                new Handler(mLooper.getLooper()), null, mBuildProperties, mWifiInjector,
+                mMainlineSupplicant);
         mWifiNative.initialize();
         mWifiNative.registerStatusListener(mStatusListener);
 
