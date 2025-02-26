@@ -26,6 +26,7 @@ import android.system.wifi.mainline_supplicant.IMainlineSupplicant;
 import android.util.Log;
 
 import com.android.internal.annotations.VisibleForTesting;
+import com.android.wifi.flags.Flags;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -45,9 +46,11 @@ public class MainlineSupplicant {
     private final Object mLock = new Object();
     private SupplicantDeathRecipient mDeathRecipient;
     private CountDownLatch mWaitForDeathLatch;
+    private final boolean mIsServiceAvailable;
 
     public MainlineSupplicant() {
         mDeathRecipient = new SupplicantDeathRecipient();
+        mIsServiceAvailable = canServiceBeAccessed();
     }
 
     @VisibleForTesting
@@ -88,6 +91,22 @@ public class MainlineSupplicant {
                 Log.i(TAG, "Service death was handled successfully");
             }
         }
+    }
+
+    /**
+     * Check whether the mainline supplicant service can be accessed.
+     */
+    private boolean canServiceBeAccessed() {
+        // Requires an Android B+ Selinux policy and a copy of the binary.
+        return Environment.isSdkAtLeastB() && Flags.mainlineSupplicant()
+                && Environment.isMainlineSupplicantBinaryInWifiApex();
+    }
+
+    /**
+     * Returns true if the mainline supplicant service is available on this device.
+     */
+    public boolean isAvailable() {
+        return mIsServiceAvailable;
     }
 
     /**

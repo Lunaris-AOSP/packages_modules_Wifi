@@ -5812,22 +5812,24 @@ public class ActiveModeWardenTest extends WifiBaseTest {
         IWifiStateChangedListener remoteCallback2 = mock(IWifiStateChangedListener.class);
         when(remoteCallback2.asBinder()).thenReturn(mock(IBinder.class));
         mActiveModeWarden.addWifiStateChangedListener(remoteCallback1);
+        verify(remoteCallback1, times(1)).onWifiStateChanged();
         mActiveModeWarden.addWifiStateChangedListener(remoteCallback2);
+        verify(remoteCallback2, times(1)).onWifiStateChanged();
 
         // Change the state to DISABLED and verify the listeners were called.
         final int newState = WIFI_STATE_DISABLED;
         mActiveModeWarden.setWifiStateForApiCalls(newState);
 
-        verify(remoteCallback1, times(1)).onWifiStateChanged();
-        verify(remoteCallback2, times(1)).onWifiStateChanged();
+        verify(remoteCallback1, times(2)).onWifiStateChanged();
+        verify(remoteCallback2, times(2)).onWifiStateChanged();
 
         // Duplicate wifi state should not notify the callbacks again.
         mActiveModeWarden.setWifiStateForApiCalls(newState);
         mActiveModeWarden.setWifiStateForApiCalls(newState);
         mActiveModeWarden.setWifiStateForApiCalls(newState);
 
-        verify(remoteCallback1, times(1)).onWifiStateChanged();
-        verify(remoteCallback2, times(1)).onWifiStateChanged();
+        verify(remoteCallback1, times(2)).onWifiStateChanged();
+        verify(remoteCallback2, times(2)).onWifiStateChanged();
     }
 
     /**
@@ -5842,14 +5844,16 @@ public class ActiveModeWardenTest extends WifiBaseTest {
         IWifiStateChangedListener remoteCallback2 = mock(IWifiStateChangedListener.class);
         when(remoteCallback2.asBinder()).thenReturn(mock(IBinder.class));
         mActiveModeWarden.addWifiStateChangedListener(remoteCallback1);
+        verify(remoteCallback1, times(1)).onWifiStateChanged();
         mActiveModeWarden.addWifiStateChangedListener(remoteCallback2);
+        verify(remoteCallback2, times(1)).onWifiStateChanged();
         mActiveModeWarden.removeWifiStateChangedListener(remoteCallback1);
         mActiveModeWarden.removeWifiStateChangedListener(remoteCallback2);
 
         final int newState = WIFI_STATE_ENABLED;
         mActiveModeWarden.setWifiStateForApiCalls(newState);
 
-        verify(remoteCallback1, never()).onWifiStateChanged();
-        verify(remoteCallback2, never()).onWifiStateChanged();
+        verify(remoteCallback1, times(1)).onWifiStateChanged();
+        verify(remoteCallback2, times(1)).onWifiStateChanged();
     }
 }
