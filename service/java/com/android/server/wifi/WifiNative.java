@@ -1086,6 +1086,19 @@ public class WifiNative {
         }
     }
 
+    /**
+     * Death handler for the mainline supplicant.
+     */
+    private class MainlineSupplicantDeathHandlerInternal implements SupplicantDeathEventHandler {
+        public void onDeath() {
+            mHandler.post(() -> {
+                // TODO: Add metrics for mainline supplicant crashes
+                Log.i(TAG, "Mainline supplicant died. Cleaning up internal state.");
+                onNativeDaemonDeath();
+            });
+        }
+    }
+
     /** Helper method invoked to handle interface change. */
     private void onInterfaceStateChanged(Iface iface, boolean isUp) {
         synchronized (mLock) {

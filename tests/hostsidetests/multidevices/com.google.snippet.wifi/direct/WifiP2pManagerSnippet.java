@@ -777,19 +777,29 @@ public class WifiP2pManagerSnippet implements Snippet {
     /**
      * Close the current P2P connection and indicate to the P2P service that connections created by
      * the app can be removed.
-     *
-     * @throws Throwable If close action timed out or got invalid channel ID.
      */
     @Rpc(description = "Close all P2P connections and indicate to the P2P service that"
             + " connections created by the app can be removed.")
     public void p2pClose() {
         for (Map.Entry<Integer, WifiP2pManager.Channel> entry : mChannels.entrySet()) {
+            Integer channelId = entry.getKey();
             WifiP2pManager.Channel channel = entry.getValue();
+            Log.d("Cleaning p2p resources associated with channelId=" + channelId);
             if (channel != null) {
-                mP2pManager.clearServiceRequests(channel, null);
+                try {
+                    wifiP2pClearServiceRequests(channelId);
+                } catch (Throwable e) {
+                    Log.e("Failed to clear service requests on channelId=" + channelId
+                            + ", error message: " + e.getMessage());
+                }
                 mP2pManager.setDnsSdResponseListeners(channel, null, null);
                 mP2pManager.setUpnpServiceResponseListener(channel, null);
-                mP2pManager.clearLocalServices(channel, null);
+                try {
+                    wifiP2pClearLocalServices(channelId);
+                } catch (Throwable e) {
+                    Log.e("Failed to clear local services on channelId=" + channelId
+                            + ", error message: " + e.getMessage());
+                }
                 channel.close();
             }
         }
