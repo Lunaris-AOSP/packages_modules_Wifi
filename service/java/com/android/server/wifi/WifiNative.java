@@ -1823,15 +1823,26 @@ public class WifiNative {
     public boolean switchClientInterfaceToScanMode(@NonNull String ifaceName,
             @NonNull WorkSource requestorWs) {
         synchronized (mLock) {
-            final Iface iface = mIfaceMgr.getIface(ifaceName);
+            Iface iface = null;
+            Iterator<Integer> ifaceIdIter = mIfaceMgr.getIfaceIdIter();
+            while (ifaceIdIter.hasNext()) {
+                Iface nextIface = mIfaceMgr.getIface(ifaceIdIter.next());
+                if (nextIface.name.equals(ifaceName)) {
+                    if (nextIface.type == Iface.IFACE_TYPE_STA_FOR_CONNECTIVITY) {
+                        iface = nextIface;
+                        break;
+                    } else if (nextIface.type == Iface.IFACE_TYPE_STA_FOR_SCAN) {
+                        Log.e(TAG, "Already in scan mode on iface=" + ifaceName);
+                        return true;
+                    }
+                }
+            }
+
             if (iface == null) {
                 Log.e(TAG, "Trying to switch to scan mode on an invalid iface=" + ifaceName);
                 return false;
             }
-            if (iface.type == Iface.IFACE_TYPE_STA_FOR_SCAN) {
-                Log.e(TAG, "Already in scan mode on iface=" + ifaceName);
-                return true;
-            }
+
             if (mWifiVendorHal.isVendorHalSupported()
                     && !mWifiVendorHal.replaceStaIfaceRequestorWs(iface.name, requestorWs)) {
                 Log.e(TAG, "Failed to replace requestor ws on " + iface);
@@ -1866,16 +1877,27 @@ public class WifiNative {
     public boolean switchClientInterfaceToConnectivityMode(@NonNull String ifaceName,
             @NonNull WorkSource requestorWs) {
         synchronized (mLock) {
-            final Iface iface = mIfaceMgr.getIface(ifaceName);
+            Iface iface = null;
+            Iterator<Integer> ifaceIdIter = mIfaceMgr.getIfaceIdIter();
+            while (ifaceIdIter.hasNext()) {
+                Iface nextIface = mIfaceMgr.getIface(ifaceIdIter.next());
+                if (nextIface.name.equals(ifaceName)) {
+                    if (nextIface.type == Iface.IFACE_TYPE_STA_FOR_SCAN) {
+                        iface = nextIface;
+                        break;
+                    } else if (nextIface.type == Iface.IFACE_TYPE_STA_FOR_CONNECTIVITY) {
+                        Log.e(TAG, "Already in connectivity mode on iface=" + ifaceName);
+                        return true;
+                    }
+                }
+            }
+
             if (iface == null) {
                 Log.e(TAG, "Trying to switch to connectivity mode on an invalid iface="
                         + ifaceName);
                 return false;
             }
-            if (iface.type == Iface.IFACE_TYPE_STA_FOR_CONNECTIVITY) {
-                Log.e(TAG, "Already in connectivity mode on iface=" + ifaceName);
-                return true;
-            }
+
             if (mWifiVendorHal.isVendorHalSupported()
                     && !mWifiVendorHal.replaceStaIfaceRequestorWs(iface.name, requestorWs)) {
                 Log.e(TAG, "Failed to replace requestor ws on " + iface);
