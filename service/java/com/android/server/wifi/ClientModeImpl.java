@@ -287,6 +287,7 @@ public class ClientModeImpl extends StateMachine implements ClientMode {
     private final long mId;
 
     private boolean mScreenOn = false;
+    private boolean mIsDeviceIdle = false;
 
     private final String mInterfaceName;
     private final ConcreteClientModeManager mClientModeManager;
@@ -2653,6 +2654,7 @@ public class ClientModeImpl extends StateMachine implements ClientMode {
 
     private void handleScreenStateChanged(boolean screenOn) {
         mScreenOn = screenOn;
+        considerChangingFirmwareRoaming();
         if (mVerboseLoggingEnabled) {
             logd(" handleScreenStateChanged Enter: screenOn=" + screenOn
                     + " mSuspendOptimizationsEnabled="
@@ -8487,7 +8489,7 @@ public class ClientModeImpl extends StateMachine implements ClientMode {
         return status == WifiNative.SET_FIRMWARE_ROAMING_SUCCESS;
     }
 
-    private void considerChangingFirmwareRoaming(boolean isIdle) {
+    private void considerChangingFirmwareRoaming() {
         if (mClientModeManager.getRole() != ROLE_CLIENT_PRIMARY) {
             if (mVerboseLoggingEnabled) {
                 Log.v(TAG, "Idle mode changed: iface " + mInterfaceName + " is not primary.");
@@ -8503,7 +8505,7 @@ public class ClientModeImpl extends StateMachine implements ClientMode {
             }
             return;
         }
-        if (isIdle) {
+        if (mIsDeviceIdle && !mScreenOn) {
             // disable firmware roaming if in idle mode
             if (mVerboseLoggingEnabled) {
                 Log.v(TAG, "Idle mode changed: iface " + mInterfaceName
@@ -8512,9 +8514,9 @@ public class ClientModeImpl extends StateMachine implements ClientMode {
             enableRoaming(false);
             return;
         }
-        // Exiting idle mode so re-enable firmware roaming, but only if the current use-case is
-        // not the local-only use-case. The local-only use-case requires firmware roaming to be
-        // always disabled.
+        // Exiting idle mode or screen is turning on, so re-enable firmware roaming, but only if the
+        // current use-case is not the local-only use-case. The local-only use-case requires
+        // firmware roaming to be always disabled.
         WifiConfiguration config = getConnectedWifiConfigurationInternal();
         if (config == null) {
             config = getConnectingWifiConfigurationInternal();
@@ -8533,7 +8535,8 @@ public class ClientModeImpl extends StateMachine implements ClientMode {
 
     @Override
     public void onIdleModeChanged(boolean isIdle) {
-        considerChangingFirmwareRoaming(isIdle);
+        mIsDeviceIdle = isIdle;
+        considerChangingFirmwareRoaming();
     }
 
     @Override

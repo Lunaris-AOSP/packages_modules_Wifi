@@ -153,8 +153,7 @@ public class MainlineSupplicant {
     /**
      * Check whether this instance is active.
      */
-    @VisibleForTesting
-    protected boolean isActive() {
+    public boolean isActive() {
         synchronized (mLock) {
             return mIMainlineSupplicant != null;
         }

@@ -822,6 +822,15 @@ public class WifiNative {
                     Log.e(TAG, "Failed to register supplicant death handler");
                     return false;
                 }
+                if (mMainlineSupplicant.isAvailable()) {
+                    if (mMainlineSupplicant.startService()) {
+                        mMainlineSupplicant.registerFrameworkDeathHandler(
+                                new MainlineSupplicantDeathHandlerInternal());
+                    } else {
+                        // Fail quietly if the mainline supplicant does not start
+                        Log.e(TAG, "Unable to start the mainline supplicant");
+                    }
+                }
             }
             return true;
         }
@@ -843,6 +852,12 @@ public class WifiNative {
                     } else {
                         mWifiInjector.getWifiP2pNative().stopP2pSupplicantIfNecessary();
                     }
+                }
+
+                // Mainline supplicant should be disabled if no STA ifaces are in use
+                if (mMainlineSupplicant.isActive()) {
+                    mMainlineSupplicant.unregisterFrameworkDeathHandler();
+                    mMainlineSupplicant.stopService();
                 }
             }
         }

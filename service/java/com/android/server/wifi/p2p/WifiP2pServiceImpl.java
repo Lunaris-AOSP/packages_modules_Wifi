@@ -299,7 +299,7 @@ public class WifiP2pServiceImpl extends IWifiP2pManager.Stub {
     private static final int DISCOVER_TIMEOUT_S = 120;
 
     // Set a 30 seconds timeout for USD service discovery and advertisement.
-    private static final int USD_BASED_SERVICE_ADVERTISEMENT_DISCOVERY_TIMEOUT_S = 30;
+    @VisibleForTesting static final int USD_BASED_SERVICE_ADVERTISEMENT_DISCOVERY_TIMEOUT_S = 30;
 
     // Idle time after a peer is gone when the group is torn down
     private static final int GROUP_IDLE_TIME_S = 10;
@@ -3835,11 +3835,12 @@ public class WifiP2pServiceImpl extends IWifiP2pManager.Stub {
                                 replyToMessage(message, WifiP2pManager.CONNECT_FAILED);
                             }
                         } else if (isConfigForV2Connection(config)) {
-                            // TODO add support for V2 persistent connection
                             if (isWifiDirect2Enabled()) {
                                 mAutonomousGroup = false;
                                 mWifiNative.p2pStopFind();
-                                if (isConfigForBootstrappingMethodOutOfBand(config)) {
+                                if (reinvokePersistentV2Group(config)) {
+                                    smTransition(this, mGroupNegotiationState);
+                                } else if (isConfigForBootstrappingMethodOutOfBand(config)) {
                                     if (mWifiNative.p2pConnect(config, FORM_GROUP) != null) {
                                         smTransition(this, mGroupNegotiationState);
                                     } else {
@@ -7245,6 +7246,63 @@ public class WifiP2pServiceImpl extends IWifiP2pManager.Stub {
         }
 
         /**
+         * Reinvoke a P2P version 2 persistent group.
+         *
+         * @param config for the peer
+         * @return true on success, false on failure
+         */
+        private boolean reinvokePersistentV2Group(WifiP2pConfig config) {
+            if (config == null) {
+                Log.e(TAG, "config is null for p2pReinvoke() of V2 group");
+                return false;
+            }
+
+            if (!isConfigForV2Connection(config)) {
+                Log.e(TAG, "config is not for p2pReinvoke() of V2 group");
+                return false;
+            }
+            WifiP2pDevice peerDevice = fetchCurrentDeviceDetails(config);
+            if (peerDevice == null) {
+                Log.e(TAG, "Invalid device for p2pReinvoke() of V2 group");
+                return false;
+            }
+            if (!peerDevice.isInvitationCapable()) {
+                Log.e(TAG, "Device is not invitation capable for p2pReinvoke() of V2 group");
+                return false;
+            }
+            boolean shouldJoin = peerDevice.isGroupOwner() || config.isJoinExistingGroup();
+            if (shouldJoin && peerDevice.isGroupLimit()) {
+                if (mVerboseLoggingEnabled) logd("target V2 supported device reaches group limit");
+                // if the target group has reached the limit,
+                // try group formation.
+                shouldJoin = false;
+            }
+            if (!shouldJoin && peerDevice.isDeviceLimit()) {
+                loge("target V2 supported device reaches the device limit");
+                return false;
+            }
+
+            WifiP2pDirInfo dirInfo = peerDevice.dirInfo;
+            if (dirInfo == null) {
+                return false;
+            }
+            int dikIdx = mWifiNative.validateDirInfo(dirInfo);
+            if (dikIdx < 0) {
+                if (mVerboseLoggingEnabled) {
+                    logd("target V2 supported device is not paired before");
+                }
+                return false;
+            }
+
+            if (mWifiNative.p2pReinvoke(-1, peerDevice.deviceAddress, dikIdx)) {
+                return true;
+            }
+
+            loge("p2pReinvoke() of V2 group failed");
+            return false;
+        }
+
+        /**
          * Reinvoke a persistent group.
          *
          * @param config for the peer
@@ -7253,6 +7311,10 @@ public class WifiP2pServiceImpl extends IWifiP2pManager.Stub {
         private boolean reinvokePersistentGroup(WifiP2pConfig config, boolean isInvited) {
             if (config == null) {
                 Log.e(TAG, "Illegal argument(s)");
+                return false;
+            }
+            if (isConfigForV2Connection(config)) {
+                Log.e(TAG, "config is for V2 group. Should call reinvokePersistentV2Group()");
                 return false;
             }
             WifiP2pDevice dev = fetchCurrentDeviceDetails(config);
@@ -7307,7 +7369,7 @@ public class WifiP2pServiceImpl extends IWifiP2pManager.Stub {
                 }
                 if (netId >= 0) {
                     // Invoke the persistent group.
-                    if (mWifiNative.p2pReinvoke(netId, dev.deviceAddress)) {
+                    if (mWifiNative.p2pReinvoke(netId, dev.deviceAddress, -1)) {
                         // Save network id. It'll be used when an invitation
                         // result event is received.
                         config.netId = netId;

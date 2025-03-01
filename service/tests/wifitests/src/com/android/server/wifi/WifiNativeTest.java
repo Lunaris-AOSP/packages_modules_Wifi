@@ -338,6 +338,9 @@ public class WifiNativeTest extends WifiBaseTest {
         when(mHostapdHal.isInitializationComplete()).thenReturn(true);
         when(mHostapdHal.registerDeathHandler(any())).thenReturn(true);
 
+        when(mMainlineSupplicant.isAvailable()).thenReturn(true);
+        when(mMainlineSupplicant.startService()).thenReturn(true);
+
         when(mWifiInjector.makeNetdWrapper()).thenReturn(mNetdWrapper);
         when(mWifiInjector.getCoexManager()).thenReturn(mCoexManager);
 

@@ -42,6 +42,8 @@ public class WifiP2pMonitorTest extends WifiBaseTest {
     private static final String P2P_IFACE_NAME = "p2p0";
     private static final String SECOND_P2P_IFACE_NAME = "p2p1";
     private static final int TEST_GROUP_FREQUENCY = 5180;
+    private static final int TEST_USD_SESSION_ID = 1;
+    private static final int TEST_USD_TERMINATED_REASON_CODE = 2;
     private WifiP2pMonitor mWifiP2pMonitor;
     private TestLooper mLooper;
     private Handler mHandlerSpy;
@@ -285,5 +287,45 @@ public class WifiP2pMonitorTest extends WifiBaseTest {
                 ((WifiP2pProvDiscEvent) messageCaptor.getValue().obj).device.deviceAddress);
         assertEquals(WifiP2pProvDiscEvent.PAIRING_BOOTSTRAPPING_SHOW_PASSPHRASE,
                 ((WifiP2pProvDiscEvent) messageCaptor.getValue().obj).event);
+    }
+
+    /**
+     * Broadcast message when USD based service discovery is terminated.
+     */
+    @Test
+    public void testBroadcastUsdBasedServiceDiscoveryTerminated() throws Exception {
+        mWifiP2pMonitor.registerHandler(
+                P2P_IFACE_NAME, WifiP2pMonitor.USD_BASED_SERVICE_DISCOVERY_TERMINATED_EVENT,
+                mHandlerSpy);
+        mWifiP2pMonitor.broadcastUsdBasedServiceDiscoveryTerminated(P2P_IFACE_NAME,
+                TEST_USD_SESSION_ID, TEST_USD_TERMINATED_REASON_CODE);
+        mLooper.dispatchAll();
+
+        ArgumentCaptor<Message> messageCaptor = ArgumentCaptor.forClass(Message.class);
+        verify(mHandlerSpy).handleMessage(messageCaptor.capture());
+        assertEquals(WifiP2pMonitor.USD_BASED_SERVICE_DISCOVERY_TERMINATED_EVENT,
+                messageCaptor.getValue().what);
+        assertEquals(TEST_USD_SESSION_ID, messageCaptor.getValue().arg1);
+        assertEquals(TEST_USD_TERMINATED_REASON_CODE, messageCaptor.getValue().arg2);
+    }
+
+    /**
+     * Broadcast message when USD based service advertisement is terminated.
+     */
+    @Test
+    public void testBroadcastUsdBasedServiceAdvertisementTerminated() throws Exception {
+        mWifiP2pMonitor.registerHandler(
+                P2P_IFACE_NAME, WifiP2pMonitor.USD_BASED_SERVICE_ADVERTISEMENT_TERMINATED_EVENT,
+                mHandlerSpy);
+        mWifiP2pMonitor.broadcastUsdBasedServiceAdvertisementTerminated(P2P_IFACE_NAME,
+                TEST_USD_SESSION_ID, TEST_USD_TERMINATED_REASON_CODE);
+        mLooper.dispatchAll();
+
+        ArgumentCaptor<Message> messageCaptor = ArgumentCaptor.forClass(Message.class);
+        verify(mHandlerSpy).handleMessage(messageCaptor.capture());
+        assertEquals(WifiP2pMonitor.USD_BASED_SERVICE_ADVERTISEMENT_TERMINATED_EVENT,
+                messageCaptor.getValue().what);
+        assertEquals(TEST_USD_SESSION_ID, messageCaptor.getValue().arg1);
+        assertEquals(TEST_USD_TERMINATED_REASON_CODE, messageCaptor.getValue().arg2);
     }
 }
