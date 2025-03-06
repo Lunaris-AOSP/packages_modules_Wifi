@@ -4215,6 +4215,11 @@ public class WifiNative {
         Bundle twtCapabilities = mWifiVendorHal.getTwtCapabilities(ifaceName);
         if (twtCapabilities != null) mCachedTwtCapabilities.put(ifaceName, twtCapabilities);
         mCachedUsdCapabilities = mSupplicantStaIfaceHal.getUsdCapabilities(ifaceName);
+        // Override device capability with overlay setting for publisher support
+        if (mCachedUsdCapabilities != null && !mContext.getResources().getBoolean(
+                R.bool.config_wifiUsdPublisherSupported)) {
+            mCachedUsdCapabilities.isUsdPublisherSupported = false;
+        }
         return featureSet;
     }
 
