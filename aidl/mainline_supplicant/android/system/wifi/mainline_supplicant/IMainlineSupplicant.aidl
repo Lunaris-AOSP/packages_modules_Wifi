@@ -16,6 +16,8 @@
 
 package android.system.wifi.mainline_supplicant;
 
+import android.system.wifi.mainline_supplicant.IUsdInterface;
+
 /**
  * Root of the mainline supplicant interface. This is an unstable AIDL interface used
  * to interact with the supplicant binary stored in the mainline module.
@@ -29,7 +31,7 @@ interface IMainlineSupplicant {
      *         |SupplicantStatusCode.FAILURE_UNKNOWN|
      *         |SupplicantStatusCode.FAILURE_ARGS_INVALID|
      */
-    void addUsdInterface(String ifaceName);
+    @PropagateAllowBlocking IUsdInterface addUsdInterface(String ifaceName);
 
     /**
      * Remove an interface that is being used for USD.

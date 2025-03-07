@@ -6588,6 +6588,26 @@ public class ClientModeImplTest extends WifiBaseTest {
         assumeTrue(mWifiInfo.isRestricted());
         assertEquals(OP_PACKAGE_NAME,
                 mWifiInfo.getRequestingPackageName());
+
+        verify(mWifiConfigManager, never()).userTemporarilyDisabledNetwork(
+                eq(mConnectedNetwork.SSID), anyInt());
+        // Setup new manual connection to another network
+        WifiConfiguration config = WifiConfigurationTestUtil.createPskSaeNetwork();
+        config.networkId = TEST_NETWORK_ID;
+        when(mWifiConfigManager.getConfiguredNetwork(TEST_NETWORK_ID)).thenReturn(config);
+
+        IActionListener connectActionListener = mock(IActionListener.class);
+        mCmi.connectNetwork(
+                new NetworkUpdateResult(TEST_NETWORK_ID),
+                new ActionListenerWrapper(connectActionListener),
+                Process.SYSTEM_UID, OP_PACKAGE_NAME, null);
+        mLooper.dispatchAll();
+        verify(connectActionListener).onSuccess();
+
+        // verify new manual connection will add the wifi network specifier network to temporary
+        // blocklist
+        verify(mWifiConfigManager).userTemporarilyDisabledNetwork(eq(mConnectedNetwork.SSID),
+                anyInt());
     }
 
     /**
