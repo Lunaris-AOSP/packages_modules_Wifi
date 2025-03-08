@@ -16,7 +16,7 @@
 
 package android.system.wifi.mainline_supplicant;
 
-import android.system.wifi.mainline_supplicant.IUsdInterface;
+import android.system.wifi.mainline_supplicant.IStaInterface;
 
 /**
  * Root of the mainline supplicant interface. This is an unstable AIDL interface used
@@ -24,17 +24,17 @@ import android.system.wifi.mainline_supplicant.IUsdInterface;
  */
 interface IMainlineSupplicant {
     /**
-     * Register an interface for use by USD.
+     * Register a STA interface with the supplicant.
      *
      * @param ifaceName Name of the interface (ex. wlan0)
      * @throws ServiceSpecificException with one of the following values:
      *         |SupplicantStatusCode.FAILURE_UNKNOWN|
      *         |SupplicantStatusCode.FAILURE_ARGS_INVALID|
      */
-    @PropagateAllowBlocking IUsdInterface addUsdInterface(String ifaceName);
+    @PropagateAllowBlocking IStaInterface addStaInterface(String ifaceName);
 
     /**
-     * Remove an interface that is being used for USD.
+     * Remove a STA interface from the supplicant.
      *
      * @param ifaceName Name of the interface (ex. wlan0)
      * @throws ServiceSpecificException with one of the following values:
@@ -42,7 +42,7 @@ interface IMainlineSupplicant {
      *         |SupplicantStatusCode.FAILURE_ARGS_INVALID|
      *         |SupplicantStatusCode.FAILURE_IFACE_UNKNOWN|
      */
-    void removeUsdInterface(String ifaceName);
+    void removeStaInterface(String ifaceName);
 
     /**
      * Terminate the service.
