@@ -64,7 +64,6 @@ import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyByte;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.anyObject;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.atLeast;
@@ -634,7 +633,7 @@ public class ClientModeImplTest extends WifiBaseTest {
         cap.wifiStandard = ScanResult.WIFI_STANDARD_11AC;
         when(mWifiNative.getConnectionCapabilities(WIFI_IFACE_NAME))
                 .thenReturn(mConnectionCapabilities);
-        when(mWifiNative.setStaMacAddress(eq(WIFI_IFACE_NAME), anyObject()))
+        when(mWifiNative.setStaMacAddress(eq(WIFI_IFACE_NAME), any()))
                 .then(new AnswerWithArguments() {
                     public boolean answer(String iface, MacAddress mac) {
                         when(mWifiNative.getMacAddress(iface)).thenReturn(mac.toString());
@@ -6465,7 +6464,7 @@ public class ClientModeImplTest extends WifiBaseTest {
     @Test
     public void testRandomizeMacAddressFailedRetryOnInterfaceUp() throws Exception {
         // mock setting the MAC address to fail
-        when(mWifiNative.setStaMacAddress(eq(WIFI_IFACE_NAME), anyObject())).thenReturn(false);
+        when(mWifiNative.setStaMacAddress(eq(WIFI_IFACE_NAME), any())).thenReturn(false);
         initializeCmi();
 
         ArgumentCaptor<MacAddress> macAddressCaptor = ArgumentCaptor.forClass(MacAddress.class);
@@ -6473,7 +6472,7 @@ public class ClientModeImplTest extends WifiBaseTest {
         MacAddress currentMac = macAddressCaptor.getValue();
 
         // mock setting the MAC address to succeed
-        when(mWifiNative.setStaMacAddress(eq(WIFI_IFACE_NAME), anyObject()))
+        when(mWifiNative.setStaMacAddress(eq(WIFI_IFACE_NAME), any()))
                 .then(new AnswerWithArguments() {
                     public boolean answer(String iface, MacAddress mac) {
                         when(mWifiNative.getMacAddress(iface)).thenReturn(mac.toString());
