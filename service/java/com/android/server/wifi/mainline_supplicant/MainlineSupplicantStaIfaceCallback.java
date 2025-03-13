@@ -17,9 +17,10 @@
 package com.android.server.wifi.mainline_supplicant;
 
 import android.annotation.NonNull;
-import android.os.Handler;
 import android.system.wifi.mainline_supplicant.IStaInterfaceCallback;
 import android.system.wifi.mainline_supplicant.UsdMessageInfo;
+
+import com.android.server.wifi.WifiThreadRunner;
 
 /**
  * Implementation of the mainline supplicant {@link IStaInterfaceCallback}.
@@ -27,13 +28,13 @@ import android.system.wifi.mainline_supplicant.UsdMessageInfo;
 public class MainlineSupplicantStaIfaceCallback extends IStaInterfaceCallback.Stub {
     private final MainlineSupplicant mMainlineSupplicant;
     private final String mIfaceName;
-    private final Handler mHandler;
+    private final WifiThreadRunner mWifiThreadRunner;
 
     MainlineSupplicantStaIfaceCallback(@NonNull MainlineSupplicant mainlineSupplicant,
-            @NonNull String ifaceName, @NonNull Handler handler) {
+            @NonNull String ifaceName, @NonNull WifiThreadRunner wifiThreadRunner) {
         mMainlineSupplicant = mainlineSupplicant;
         mIfaceName = ifaceName;
-        mHandler = handler;
+        mWifiThreadRunner = wifiThreadRunner;
     }
 
     /**
