@@ -184,7 +184,7 @@ public final class PasnConfig implements Parcelable {
     private final int mBaseAkms;
     @Cipher
     private final int mCiphers;
-    private final String mPassword;
+    private String mPassword;
     private final WifiSsid mWifiSsid;
     private final byte[] mPasnComebackCookie;
 
@@ -210,6 +210,13 @@ public final class PasnConfig implements Parcelable {
     @Nullable
     public String getPassword() {
         return mPassword;
+    }
+
+    /**
+     * @hide
+     */
+    public void setPassword(String password) {
+        mPassword = password;
     }
 
     /**
