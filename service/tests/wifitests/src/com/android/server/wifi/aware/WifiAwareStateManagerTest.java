@@ -2971,7 +2971,7 @@ public class WifiAwareStateManagerTest extends WifiBaseTest {
                 null, messageId, 0);
         mMockLooper.dispatchAll();
         inOrder.verify(mMockNative).sendMessage(transactionId.capture(), eq(subscribeId),
-                eq(requestorId), eq(peerMac), isNull(byte[].class), eq(messageId));
+                eq(requestorId), eq(peerMac), isNull(), eq(messageId));
         short tid = transactionId.getValue();
         mDut.onMessageSendQueuedSuccessResponse(tid);
         mMockLooper.dispatchAll();
