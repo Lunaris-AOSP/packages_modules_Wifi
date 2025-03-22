@@ -3873,6 +3873,7 @@ public class WifiAwareStateManagerTest extends WifiBaseTest {
         validateCorrectAwareStatusChangeBroadcast(inOrder);
         inOrder.verify(mMockNative).disable(transactionId.capture());
         mDut.onDisableResponse(transactionId.getValue(), NanStatusCode.SUCCESS);
+        mDut.onAwareDownNotification(NanStatusCode.SUCCESS);
         mMockLooper.dispatchAll();
         assertFalse(mDut.isDeviceAttached());
         collector.checkThat("usage disabled", mDut.isUsageEnabled(), equalTo(false));
